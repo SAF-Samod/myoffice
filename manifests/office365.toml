@@ -1,0 +1,37 @@
+# Signed in v0.2 — wizard reads this for pinned versions and install steps.
+
+name = "Microsoft Office"
+id = "office365"
+version = 1
+
+[media]
+odt_configuration = "config/odt/configuration.xml"
+
+[runtime]
+wine_version = "pinned"
+runner_sha256 = ""  # set MYOFFICE_RUNNER_SHA256 in release pipeline
+
+[install]
+wine_arch = "win64"
+dll_overrides = "mscoree,mshtml=;winemenubuilder.exe=d"
+
+[health]
+word_exe_globs = [
+  "drive_c/Program Files/Microsoft Office/root/Office16/WINWORD.EXE",
+  "drive_c/Program Files/Microsoft Office/Office16/WINWORD.EXE",
+]
+
+[apps.word]
+exe = "WINWORD.EXE"
+desktop_name = "Word"
+mime_types = ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+
+[apps.excel]
+exe = "EXCEL.EXE"
+desktop_name = "Excel"
+mime_types = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
+
+[apps.powerpoint]
+exe = "POWERPNT.EXE"
+desktop_name = "PowerPoint"
+mime_types = ["application/vnd.openxmlformats-officedocument.presentationml.presentation"]

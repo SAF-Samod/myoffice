@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Hidden launcher: exec Wine with minimal env. Invoked from .desktop only.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+DATA="${MYOFFICE_DATA:-$HOME/.local/share/myoffice}"
+ENV_FILE="$DATA/config/launch.env"
+
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  set -a
+  source "$ENV_FILE"
+  set +a
+fi
+
+export MYOFFICE_DATA="${MYOFFICE_DATA:-$DATA}"
+export MYOFFICE_PREFIX="${MYOFFICE_PREFIX:-$DATA/prefixes/office}"
+export MYOFFICE_WINE="${MYOFFICE_WINE:-$DATA/runtimes/current/bin/wine}"
+export WINEPREFIX="${WINEPREFIX:-$MYOFFICE_PREFIX}"
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINEDLLOVERRIDES="${WINEDLLOVERRIDES:-mscoree,mshtml=;winemenubuilder.exe=d}"
+
+WINE="$MYOFFICE_WINE"
+if [[ ! -x "$WINE" ]]; then
+  if command -v zenity >/dev/null 2>&1; then
+    zenity --error --text="Office is not set up yet. Please run MyOffice Setup."
+  else
+    echo "Office is not set up yet. Please run MyOffice Setup." >&2
+  fi
+  exit 1
+fi
+
+APP="${1:-word}"
+shift || true
+
+declare -A EXE=(
+  [word]=WINWORD.EXE
+  [excel]=EXCEL.EXE
+  [powerpoint]=POWERPNT.EXE
+)
+
+WIN_EXE="${EXE[$APP]:-}"
+if [[ -z "$WIN_EXE" ]]; then
+  echo "Unknown application: $APP" >&2
+  exit 1
+fi
+
+find_office_exe() {
+  local name="$1"
+  local prefix="$WINEPREFIX"
+  local -a candidates=(
+    "$prefix/drive_c/Program Files/Microsoft Office/root/Office16/$name"
+    "$prefix/drive_c/Program Files/Microsoft Office/Office16/$name"
+  )
+  for c in "${candidates[@]}"; do
+    if [[ -f "$c" ]]; then
+      echo "$c"
+      return 0
+    fi
+  done
+  return 1
+}
+
+OFFICE_BIN="$(find_office_exe "$WIN_EXE")" || {
+  zenity --error --text="Could not find $APP. Try Repair Office in MyOffice Settings." 2>/dev/null || \
+    echo "Could not find $APP. Try Repair Office in Settings." >&2
+  exit 1
+}
+
+WIN_ARGS=()
+for arg in "$@"; do
+  if [[ -f "$arg" ]]; then
+    WIN_ARGS+=("$("$WINE" winepath -w "$arg")")
+  else
+    WIN_ARGS+=("$arg")
+  fi
+done
+
+WINE_CMD=("$WINE" "$OFFICE_BIN" "${WIN_ARGS[@]}")
+
+export MYOFFICE_ROOT="$ROOT"
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 "$ROOT/bin/myoffice-exec-wine.py" "${WINE_CMD[@]}"

@@ -1,0 +1,11 @@
+<!-- Template ODT configuration — adjust Product ID and channel for your Office variant. -->
+<Configuration ID="MyOffice-PoC" Host="DESKTOP">
+  <Add OfficeClientEdition="64" Channel="Current">
+    <Product ID="O365ProPlusRetail">
+      <Language ID="en-us" />
+    </Product>
+  </Add>
+  <Property Name="AUTOACTIVATE" Value="0" />
+  <Display Level="None" AcceptEULA="TRUE" />
+  <Logging Level="Standard" Path="%TEMP%" />
+</Configuration>
